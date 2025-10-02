@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BMI & Daily Calorie Calculator</title>
+  <meta name="description" content="Free BMI and Calorie Calculator. Enter your height, weight, age, and activity to get your BMI category and daily calories." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root { color-scheme: light; }
+    body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji"; }
+    .glass { backdrop-filter: blur(8px); background: rgba(255,255,255,0.7); }
+    .shadow-soft { box-shadow: 0 10px 25px rgba(0,0,0,.08); }
+    .ring-focus:focus { outline: none; box-shadow: 0 0 0 4px rgba(99,102,241,.25); }
+  </style>
+
+  <!-- Google AdSense (load once) -->
+  <!-- Replace ca-pub-XXXXXXXXXXXXXXXX with your AdSense publisher ID -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX"
+          crossorigin="anonymous"></script>
+</head>
+<body class="min-h-screen bg-gradient-to-b from-indigo-50 via-white to-white text-slate-800">
+  <!-- ... content from before ... -->
+
+  <footer class="px-6 pb-12">
+    <div class="max-w-5xl mx-auto text-xs text-slate-500">For information only. Consult a professional for personal advice.</div>
+
+    <!-- AdSense: Footer Responsive -->
+    <div class="max-w-5xl mx-auto mt-6">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+           data-ad-slot="2222222222"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
+    </div>
+  </footer>
+
+  <!-- Sticky bottom ad (mobile only) -->
+  <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 sm:hidden z-50">
+    <ins class="adsbygoogle"
+         style="display:block; height:60px"
+         data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+         data-ad-slot="3333333333"
+         data-ad-format="horizontal"
+         data-full-width-responsive="true"></ins>
+    <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
+  </div>
+
+  <script>
+    const el = (sel) => document.querySelector(sel);
+
+    const metricWrapH = document.getElementById('heightMetric');
+    const imperialWrapH = document.getElementById('heightImperial');
+    const metricWrapW = document.getElementById('weightMetric');
+    const imperialWrapW = document.getElementById('weightImperial');
+
+    function toggleUnits(units) {
+      const isMetric = units === 'metric';
+      metricWrapH.classList.toggle('hidden', !isMetric);
+      imperialWrapH.classList.toggle('hidden', isMetric);
+      metricWrapW.classList.toggle('hidden', !isMetric);
+      imperialWrapW.classList.toggle('hidden', isMetric);
+    }
+
+    document.querySelectorAll('input[name="units"]').forEach(r => {
+      r.addEventListener('change', (e) => toggleUnits(e.target.value));
+    });
+
+    function toMetricHeightCm({ units, height_cm, height_ft, height_in }) {
+      if (units === 'metric') return Number(height_cm);
+      const ft = Number(height_ft || 0), inch = Number(height_in || 0);
+      const totalIn = ft * 12 + inch;
+      return totalIn * 2.54; // inches to cm
+    }
+
+    function toMetricWeightKg({ units, weight_kg, weight_lb }) {
+      if (units === 'metric') return Number(weight_kg);
+      return Number(weight_lb) * 0.45359237; // lb to kg
+    }
+
+    function calcBMI(kg, cm) {
+      const m = cm / 100;
+      return kg / (m * m);
+    }
+
+    function bmiCategory(bmi) {
+      if (bmi < 18.5) return 'Underweight';
+      if (bmi < 25) return 'Normal';
+      if (bmi < 30) return 'Overweight';
+      return 'Obesity';
+    }
+
+    function mifflinStJeor({ sex, age, kg, cm, activity }) {
+      const bmr = (sex === 'male')
+        ? (10 * kg + 6.25 * cm - 5 * age + 5)
+        : (10 * kg + 6.25 * cm - 5 * age - 161);
+      return bmr * activity;
+    }
+
+    function fmt(n) { return Math.round(n).toLocaleString(); }
+
+    function tipFor(bmiCat) {
+      switch (bmiCat) {
+        case 'Underweight': return 'Consider a small calorie surplus and strength training. Speak to a healthcare professional for tailored guidance.';
+        case 'Normal': return 'You\'re in the healthy BMI range. Maintain with balanced nutrition and regular activity.';
+        case 'Overweight': return 'A mild calorie deficit (5–15%) and increased daily movement can help.';
+        case 'Obesity': return 'A structured plan with professional support is recommended. Start with small, sustainable changes.';
+        default: return '';
+      }
+    }
+
+    document.getElementById('calcForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(e.target).entries());
+
+      const units = data.units;
+      const sex = data.sex;
+      const age = Number(data.age);
+      const cm = toMetricHeightCm({ units, height_cm: data.height_cm, height_ft: data.height_ft, height_in: data.height_in });
+      const kg = toMetricWeightKg({ units, weight_kg: data.weight_kg, weight_lb: data.weight_lb });
+      const activity = Number(data.activity);
+
+      if (!cm || !kg || !age) { alert('Please fill out your height, weight, and age.'); return; }
+
+      const bmi = calcBMI(kg, cm);
+      const bmiCat = bmiCategory(bmi);
+      const tdee = mifflinStJeor({ sex, age, kg, cm, activity });
+
+      el('#bmiOut').textContent = (Math.round(bmi * 10) / 10).toFixed(1);
+      el('#bmiCat').textContent = bmiCat;
+      el('#calOut').textContent = fmt(tdee);
+      el('#calMain').textContent = fmt(tdee);
+      el('#calCut').textContent = fmt(tdee * 0.9);
+      el('#calBulk').textContent = fmt(tdee * 1.1);
+      el('#tip').textContent = tipFor(bmiCat);
+
+      el('#results').classList.remove('hidden');
+    });
+  </script>
+</body>
+</html>
